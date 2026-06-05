@@ -1,6 +1,6 @@
 ---
 name: week-in-rewind
-description: Summarizes the current week's work from Cursor chat transcripts. Use when the user asks for a weekly work summary, weekly report, week recap, 本周总结, 周报, 这周做了什么, or invokes /week-in-rewind.
+description: Summarizes the current week's work across Cursor chat transcripts from all relevant projects. Use when the user asks for a weekly work summary, weekly report, week recap, 本周总结, 周报, 这周做了什么, or invokes /week-in-rewind.
 ---
 
 # Week In Rewind
@@ -17,9 +17,11 @@ description: Summarizes the current week's work from Cursor chat transcripts. Us
    - 如果用户明确指定别的范围，以用户指定为准。
 
 2. 收集聊天记录：
-   - 使用系统上下文提供的 `agent-transcripts` 位置。
-   - 只读取父级聊天记录，不要把 `subagents` 下的记录当作独立来源引用。
-   - 优先按消息内的 `<timestamp>` 判断是否在时间范围内；文件修改时间只能作为辅助线索。
+   - 默认跨**所有 Cursor 项目**收集聊天记录，而不是只看当前 workspace。
+   - 如果系统上下文只提供当前项目的 `agent-transcripts` 位置，先以它为起点推断 Cursor projects 根目录，再枚举同级项目下的 `agent-transcripts`。
+   - 只读取父级聊天记录：读取 `agent-transcripts/<uuid>/<uuid>.jsonl`，不要把 `subagents` 下的记录当作独立来源引用。
+   - 优先按消息内的 `<timestamp>` 判断是否在时间范围内；文件修改时间只能作为辅助线索，用于发现候选文件，不能单独作为纳入依据。
+   - 对同一个父级 transcript 只统计一次；按 uuid 去重，避免同一记录被多个路径重复纳入。
 
 3. 按标题粗筛记录：
    - 以程序员工作视角判断标题是否与研发工作相关。
@@ -37,6 +39,7 @@ description: Summarizes the current week's work from Cursor chat transcripts. Us
    - 同一任务即使分布在多次聊天中，也必须合并成一个工作主题，按最终结果、关键难点和验证状态总结。
    - 聊天记录只是证据来源，不是输出结构。
    - 默认周报正文不放来源链接，除非用户明确要求带来源、依据、证明或可追溯。
+   - 跨项目工作要合并总结，但涉及具体项目调试、架构、文档或交付物时必须写清项目名。
 
 6. 组织输出：
    - 固定输出 4 个部分，每个部分分点描述，分点用数字编号开头。
@@ -94,5 +97,5 @@ description: Summarizes the current week's work from Cursor chat transcripts. Us
 - 涉及项目时写清具体项目或模块名。
 - 如果聊天记录不足以判断结果，明确写成“记录中未看到最终验证结果”。
 - 下周计划必须来自聊天记录中的待办、阻塞、验证缺口或用户补充，不要凭空安排新任务。
-- 每个部分 3 到 5 点，且每个部分不超过 250 字。
+- 每个部分 3 到 5 点，且每个部分不超过 300 字。
 - 默认不要输出表格；用短句和数字编号分点。
