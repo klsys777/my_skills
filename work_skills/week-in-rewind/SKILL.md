@@ -1,13 +1,13 @@
 ---
 name: week-in-rewind
-description: Summarizes the current week's work across Cursor chat transcripts from all relevant projects. Use when the user asks for a weekly work summary, weekly report, week recap, 本周总结, 周报, 这周做了什么, or invokes /week-in-rewind.
+description: Summarizes the current week's work across Cursor and Codex chat transcripts from all relevant projects. Use when the user asks for a weekly work summary, weekly report, week recap, 本周总结, 周报, 这周做了什么, or invokes /week-in-rewind.
 ---
 
 # Week In Rewind
 
 ## 目标
 
-根据 Cursor 聊天记录，总结从本周一 00:00 到执行该 skill 时刻之间的工作内容。默认使用简体中文输出，聚焦结果、难点复盘和后续改进，适合直接改成周报。
+根据 Cursor 和 Codex 的聊天记录，总结从本周一 00:00 到执行该 skill 时刻之间的工作内容。默认使用简体中文输出，聚焦结果、难点复盘和后续改进，适合直接改成周报。
 
 ## 工作流
 
@@ -16,18 +16,27 @@ description: Summarizes the current week's work across Cursor chat transcripts f
    - 终点：当前执行时间；优先使用系统上下文里的当前时间。
    - 如果用户明确指定别的范围，以用户指定为准。
 
-2. 收集聊天记录：
-   - 默认跨**所有 Cursor 项目**收集聊天记录，而不是只看当前 workspace。
-   - 如果系统上下文只提供当前项目的 `agent-transcripts` 位置，先以它为起点推断 Cursor projects 根目录，再枚举同级项目下的 `agent-transcripts`。
-   - 只读取父级聊天记录：读取 `agent-transcripts/<uuid>/<uuid>.jsonl`，不要把 `subagents` 下的记录当作独立来源引用。
-   - 优先按消息内的 `<timestamp>` 判断是否在时间范围内；文件修改时间只能作为辅助线索，用于发现候选文件，不能单独作为纳入依据。
-   - 对同一个父级 transcript 只统计一次；按 uuid 去重，避免同一记录被多个路径重复纳入。
+2. 收集聊天记录（同时覆盖 Cursor 和 Codex 两个来源）：
+   - Cursor：
+     - 默认跨**所有 Cursor 项目**收集，而不是只看当前 workspace。
+     - 如果系统上下文只提供当前项目的 `agent-transcripts` 位置，先以它为起点推断 Cursor projects 根目录，再枚举同级项目下的 `agent-transcripts`。
+     - 只读取父级聊天记录：读取 `agent-transcripts/<uuid>/<uuid>.jsonl`，不要把 `subagents` 下的记录当作独立来源引用。
+     - 优先按消息内的 `<timestamp>` 判断是否在时间范围内；文件修改时间只能作为辅助线索，用于发现候选文件，不能单独作为纳入依据。
+   - Codex：
+     - 默认跨**所有 Codex 项目**收集，会话存放在 `~/.codex/sessions/YYYY/MM/DD/rollout-<时间>-<uuid>.jsonl`（`~` 为用户主目录，对应 `$CODEX_HOME/sessions`）。
+     - 先按本周时间范围对应的年月日目录定位候选文件，再读取文件内容确认。
+     - 每个文件首行 `type":"session_meta"` 含 `cwd`（项目路径）、`id`（会话 uuid）；用户消息在 `type":"user_message"` 的 `message` 字段。
+     - Codex 没有显式标题，用首条有效用户消息概括成不超过 10 字的标题。
+     - 时间戳为 UTC（带 `Z`），需换算成本地时区（默认 Asia/Shanghai）再判断是否落在本周范围。
+     - 效率：`session_meta` 首行含超大 `base_instructions`，不要整文件全量读入。优先只检索 `cwd`、`timestamp`、`user_message` 行（如按行/关键字筛选），按需再读相关片段，避免无谓的 token 消耗。
+   - 去重：同源（同为 Cursor 或同为 Codex）按 uuid 去重，避免同一记录被多个路径重复纳入。
+   - 跨源（Cursor 与 Codex）无法按 uuid 对齐，需靠「项目 + 主题」语义判断是否同一任务；若是同一任务，合并成一个工作主题，不要重复计数。
 
-3. 按标题粗筛记录：
-   - 以程序员工作视角判断标题是否与研发工作相关。
+3. 按标题/首条用户消息粗筛记录：
+   - 以程序员工作视角判断是否与研发工作相关：Cursor 用聊天标题，Codex 没有标题时用首条有效用户消息。
    - 保留代码开发、缺陷修复、调试定位、架构分析、协议梳理、脚本工具、构建部署、测试验证、文档沉淀、代码审查相关聊天。
    - 排除闲聊、生活事务、纯翻译润色、通用问答、与项目产出无关的工具试用或学习记录。
-   - 标题不清楚但可能包含工作产出时，读取正文后再判断，不要只凭标题误删。
+   - 标题或首条消息不清楚但可能包含工作产出时，读取正文后再判断，不要误删。
 
 4. 提取有效工作：
    - 关注用户需求、代码修改、调试结论、运行过的验证、未完成事项。
@@ -44,7 +53,7 @@ description: Summarizes the current week's work across Cursor chat transcripts f
 6. 组织输出：
    - 固定输出 4 个部分，每个部分分点描述，分点用数字编号开头。
    - 每个部分控制在 3 到 5 点。
-   - 每个部分不超过 250 字。
+   - 每个部分不超过 300 字。
    - 少写过程流水账，优先写结果、产出、解决方式和可改进方向。
    - 提到项目架构、项目调试或项目文档时，必须写清具体项目名。
    - 区分工作产出和为熟悉项目而整理的学习文档；学习文档可作为背景或过程收获，但不要误写成核心工作交付物。
@@ -84,7 +93,7 @@ description: Summarizes the current week's work across Cursor chat transcripts f
 - 只有用户明确要求“带来源/依据/证明/可追溯”时才引用聊天记录。
 - 引用只用于追溯来源，不作为输出结构。
 - 引用聊天时使用 `[标题](uuid)`，标题不超过 10 个汉字或简短词组。
-- `uuid` 使用父级 transcript 的文件名去掉 `.jsonl` 后的值。
+- Cursor 的 `uuid` 使用父级 transcript 的文件名去掉 `.jsonl` 后的值；Codex 的 `uuid` 使用 `session_meta` 的 `id`（即文件名末尾的 uuid）。
 - 不引用 `subagents` 的 transcript 或 ID。
 - 不暴露本地文件夹路径。
 
@@ -97,5 +106,4 @@ description: Summarizes the current week's work across Cursor chat transcripts f
 - 涉及项目时写清具体项目或模块名。
 - 如果聊天记录不足以判断结果，明确写成“记录中未看到最终验证结果”。
 - 下周计划必须来自聊天记录中的待办、阻塞、验证缺口或用户补充，不要凭空安排新任务。
-- 每个部分 3 到 5 点，且每个部分不超过 300 字。
-- 默认不要输出表格；用短句和数字编号分点。
+- 默认不要输出表格；用短句和数字编号分点（篇幅约束见「组织输出」）。
