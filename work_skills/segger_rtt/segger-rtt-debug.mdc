@@ -1,0 +1,24 @@
+---
+description: 添加调试打印、SEGGER_RTT、RTT 日志时必须遵循的输出约定
+alwaysApply: false
+---
+# SEGGER RTT 调试打印约定
+
+当用户要求增加调试打印、日志、RTT 输出时：
+
+1. **一律使用** `SEGGER_RTT_printf`（不要用 `printf` / `sprintf` 替代调试输出，除非用户明确要求）。
+2. 需要时 `#include "SEGGER_RTT.h"`。
+3. **按不同情况使用不同颜色**（来自 `SEGGER_RTT.h`）：
+   - 成功 / 正常解算：`RTT_CTRL_TEXT_BRIGHT_GREEN`
+   - 原始数据 / 收包内容：`RTT_CTRL_TEXT_BRIGHT_CYAN`
+   - 警告 / 忽略（如 ID 不匹配）：`RTT_CTRL_TEXT_BRIGHT_YELLOW`
+   - 错误 / 失败 / 参数非法：`RTT_CTRL_TEXT_BRIGHT_RED`
+   - 其它分类可用：`BRIGHT_BLUE` / `BRIGHT_MAGENTA` / `BRIGHT_WHITE`
+4. 每条打印以 `RTT_CTRL_RESET` 收尾，格式示例：
+
+```c
+SEGGER_RTT_printf(0, RTT_CTRL_TEXT_BRIGHT_GREEN
+        "[TAG] ok: val=%d\r\n" RTT_CTRL_RESET, val);
+```
+
+5. `SEGGER_RTT_printf` **不支持 `%f`**：浮点请先放大为整数再打印（如 x100 → `%d.%02d`）。
