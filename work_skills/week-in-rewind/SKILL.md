@@ -7,7 +7,7 @@ description: Use when the user asks for a weekly work summary, weekly report, we
 
 ## 目标
 
-根据 Agent 的聊天记录，总结从本周一 00:00 到执行该 skill 时刻之间的工作内容。默认使用简体中文输出，聚焦结果、难点复盘和下周计划，适合直接改成周报。
+根据 Agent 的聊天记录，总结从本周一 00:00 到执行该 skill 时刻之间的工作内容。默认使用简体中文输出，聚焦结果、难点复盘和下周计划，适合直接改成周报；结果写入本 skill 目录下的 `Weekly_Report.txt`。
 
 ## 工作流
 
@@ -59,6 +59,10 @@ description: Use when the user asks for a weekly work summary, weekly report, we
 7. 输出前自检：
    - 检查每条结论是否能被聊天记录或用户补充内容支撑；不能支撑的不要写。
    - 用内部证据线索复核主题归并是否重复、是否误按聊天记录或平台来源拆分、完成状态是否准确、下周计划是否来自记录或用户补充。
+
+8. 写入输出文件：
+   - 把自检后的周报内容写入本 skill 目录下的 `Weekly_Report.txt`（与 SKILL.md 同目录，用绝对路径定位，不受当前 workspace 影响）。
+   - 该文件不存在时先新建，存在时写入前先清空旧内容，再整体写入本次周报，不要追加。
 
 ## 输出模板
 
