@@ -1,13 +1,13 @@
 ---
 name: week-in-rewind
-description: Summarizes the current week's work across Cursor, Codex, and Claude chat transcripts from all relevant projects. Use when the user asks for a weekly work summary, weekly report, week recap, 本周总结, 周报, 这周做了什么, or invokes /week-in-rewind.
+description: Use when the user asks for a weekly work summary, weekly report, week recap, 本周总结, 周报, 这周做了什么, or invokes /week-in-rewind.
 ---
 
 # Week In Rewind
 
 ## 目标
 
-根据 Cursor、Codex 和 Claude 的聊天记录，总结从本周一 00:00 到执行该 skill 时刻之间的工作内容。默认使用简体中文输出，聚焦结果、难点复盘和后续改进，适合直接改成周报。
+根据 Agent 的聊天记录，总结从本周一 00:00 到执行该 skill 时刻之间的工作内容。默认使用简体中文输出，聚焦结果、难点复盘和下周计划，适合直接改成周报。
 
 ## 工作流
 
@@ -17,7 +17,7 @@ description: Summarizes the current week's work across Cursor, Codex, and Claude
    - 如果用户明确指定别的范围，以用户指定为准。
 
 2. 收集聊天记录（格式细节见 `references.md`）：
-   - 同时覆盖 Cursor、Codex 和 Claude，默认跨所有相关项目收集，不只看当前 workspace。
+   - 同时覆盖所有支持的 Agent（当前为 Cursor、Codex、Claude、Trae，来源与格式见 `references.md`），默认跨所有相关项目收集，不只看当前 workspace。
    - 先按本周时间范围定位候选记录，再读取内容确认；优先用消息内时间判断，文件修改时间只能作为候选线索。
    - 只把父级聊天或主会话作为来源；`subagents` 记录可用于理解过程，但不要作为独立来源引用。
    - 会话没有稳定标题时，按 `references.md` 的通用规则生成标题，供粗筛和引用使用。
@@ -41,15 +41,16 @@ description: Summarizes the current week's work across Cursor, Codex, and Claude
    - 如果本周涉及多个项目，即使归并到同一工作主题下，也必须点出具体项目名和对应产出，不能因为压缩主题数量而弱化工作量。
    - 如果 6 个以上项目彼此不相关，不要强行压成 3 到 5 个主题；可以按项目或交付目标分别列出。
    - 同一任务即使分布在多次聊天中，也必须合并成一个工作主题，按最终结果、关键难点和验证状态总结。
-   - 同一项目或同一功能跨 Cursor、Codex、Claude 多个平台处理时，必须合并成一个工作主题；平台来源只作为内部证据，不作为拆分依据。
+   - 同一项目或同一功能跨多个 Agent 处理时，必须合并成一个工作主题；Agent 来源只作为内部证据，不作为拆分依据。
    - 聊天记录只是证据来源，不是输出结构。
    - 归并时用内部证据线索判断同一主题：项目、模块、文件、问题描述、PR/issue、交付目标或验证结果相近时优先合并。
    - 跨项目工作可以合并总结，但必须保留项目颗粒度，写清每个项目做了什么。
 
 6. 组织输出：
-   - 默认输出 4 个部分，每个部分分点描述，分点用中文数字编号（`1、`）开头。
+   - 默认输出 3 个部分，每个部分分点描述，分点用中文数字编号（`1、`）开头。
+   - 第 1 部分按项目分块：先写一行项目名（如 `[项目名]项目：`），下面每条产出缩进一个 tab 再用中文数字编号（`1、`）开头；多个项目就分多块列出。
    - 每个部分通常控制在 2 到 5 点；记录很少时不要硬凑，记录很多时优先合并同类项。覆盖面优先于点数与字数：任何有产出的项目至少出现一条。
-   - 多项目并行的一周，可以在一个条目中用顿号、括号或短句列出多个项目及产出。
+   - 多项目并行的一周，第 2、3 部分可以在一个条目中用顿号、括号或短句列出多个项目及产出。
    - 每个部分默认不超过 300 字，点数超过 5 时可放宽到 400 字左右；内容较多时优先压缩表达，避免遗漏关键成果、阻塞和验证状态。
    - 少写过程流水账，优先写结果、产出、解决方式和可改进方向。
    - 提到项目架构、项目调试或项目文档时，必须写清具体项目名。
@@ -65,9 +66,10 @@ description: Summarizes the current week's work across Cursor, Codex, and Claude
 ## 本周工作回放
 
 ### 1. 本周工作的结果和产出
-1、[关键任务结果或交付物，尽量说明产出价值]
-2、[关键任务结果或交付物，少描述过程]
-3、[关键任务结果或交付物；默认不要在正文中插入来源链接]
+[项目名]项目：
+	1、[该项目关键任务结果或交付物，尽量说明产出价值]
+	2、[该项目关键任务结果或交付物，少描述过程]
+	3、[该项目关键任务结果或交付物；默认不要在正文中插入来源链接]
 
 ### 2. 开发遇到的难点，以及怎么解决的
 1、[难点：解决方式或当前结论]
@@ -78,11 +80,6 @@ description: Summarizes the current week's work across Cursor, Codex, and Claude
 1、[基于本周未完成事项或待验证项形成的下周重点]
 2、[需要推进的项目、模块或问题域，写清预期结果]
 3、[如果聊天记录不足以判断计划，写“记录中未看到明确计划，可优先补齐...”]
-
-### 4. 未来我还可以怎样做得更好
-1、[复盘结果与目标的差距]
-2、[下周可执行的改进动作]
-3、[提升质量、效率或验证完整性的建议]
 ```
 
 ## 引用规则
